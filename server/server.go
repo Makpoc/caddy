@@ -203,7 +203,9 @@ func serveTLSWithSNI(s *Server, ln net.Listener, tlsConfigs []TLSConfig) error {
 	// then we map the server names to their certs
 	var err error
 	config.Certificates = make([]tls.Certificate, len(tlsConfigs))
+	var allGetCertificateCallbacks []func(c *tls.ClientHelloInfo) (*tls.Certificate, error)
 	for i, tlsConfig := range tlsConfigs {
+		allGetCertificateCallbacks = append(allGetCertificateCallbacks, tlsConfig.GetCertificateCallbacks...)
 		config.Certificates[i], err = tls.LoadX509KeyPair(tlsConfig.Certificate, tlsConfig.Key)
 		config.Certificates[i].OCSPStaple = tlsConfig.OCSPStaple
 		if err != nil {
@@ -211,6 +213,21 @@ func serveTLSWithSNI(s *Server, ln net.Listener, tlsConfigs []TLSConfig) error {
 			return err
 		}
 	}
+
+	config.GetCertificate = func(clientInfo *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		var err error
+		for _, callback := range allGetCertificateCallbacks {
+			var cert *tls.Certificate
+			cert, err = callback(clientInfo)
+			// search for the first callback to return a certificate without an error
+			if err == nil && cert != nil {
+				return cert, err
+			}
+		}
+		// return the last received error
+		return nil, err
+	}
+
 	config.BuildNameToCertificate()
 
 	// Customize our TLS configuration

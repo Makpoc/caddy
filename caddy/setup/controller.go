@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"strings"
@@ -43,6 +44,12 @@ type Controller struct {
 	// setup function to persist state between all
 	// the hosts on a server block.
 	ServerBlockStorage interface{}
+
+	// RegisterGetCertificate is a function that allows users to register their own
+	// GetCertificate functions which will be used by the server to determine which
+	// certificate to provide to the client.
+	// See tls.Config.GetCertificate for more information.
+	RegisterGetCertificate func(f func(c *tls.ClientHelloInfo) (*tls.Certificate, error))
 }
 
 // NewTestController creates a new *Controller for

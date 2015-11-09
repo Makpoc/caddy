@@ -2,6 +2,7 @@ package caddy
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -61,6 +62,7 @@ func loadConfigs(filename string, input io.Reader) ([]server.Config, error) {
 				ConfigFile: filename,
 				AppName:    AppName,
 				AppVersion: AppVersion,
+				TLS:        server.TLSConfig{},
 			}
 
 			// It is crucial that directives are executed in the proper order.
@@ -84,6 +86,11 @@ func loadConfigs(filename string, input io.Reader) ([]server.Config, error) {
 						ServerBlockHostIndex: j,
 						ServerBlockHosts:     sb.HostList(),
 						ServerBlockStorage:   storages[dir.name],
+						RegisterGetCertificate: func(c func(clientInfo *tls.ClientHelloInfo) (*tls.Certificate, error)) {
+							if c != nil {
+								config.TLS.GetCertificateCallbacks = append(config.TLS.GetCertificateCallbacks, c)
+							}
+						},
 					}
 					// execute setup function and append middleware handler, if any
 					midware, err := dir.setup(controller)
@@ -158,6 +165,11 @@ func loadConfigs(filename string, input io.Reader) ([]server.Config, error) {
 						ServerBlockHostIndex: j,
 						ServerBlockHosts:     sb.HostList(),
 						ServerBlockStorage:   storages[dir.name],
+						RegisterGetCertificate: func(c func(clientInfo *tls.ClientHelloInfo) (*tls.Certificate, error)) {
+							if c != nil {
+								config.TLS.GetCertificateCallbacks = append(config.TLS.GetCertificateCallbacks, c)
+							}
+						},
 					}
 					midware, err := dir.setup(controller)
 					if err != nil {

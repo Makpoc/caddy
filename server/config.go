@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"net"
 
 	"github.com/mholt/caddy/middleware"
@@ -62,4 +63,5 @@ type TLSConfig struct {
 	ProtocolMaxVersion       uint16
 	PreferServerCipherSuites bool
 	ClientCerts              []string
+	GetCertificateCallbacks  []func(c *tls.ClientHelloInfo) (*tls.Certificate, error)
 }
